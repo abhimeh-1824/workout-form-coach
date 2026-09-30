@@ -11,6 +11,7 @@ import signal
 import sys
 import threading
 import time
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 from sqlalchemy.orm import Session, sessionmaker
@@ -18,7 +19,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import settings
 from app.db.base import Job, JobStatus
 from app.db.session import SessionLocal
-from app.services.job_queue import claim_next_job
+from app.services.job_queue import claim_next_job, find_stale_processing_jobs
 from app.services.storage import cleanup_orphaned_media
 from app.services.video_processor import finalize_job_failure, process_job
 
@@ -43,6 +44,32 @@ def execute_custom_processor(
         processor(job)
     else:
         processor(job, factory)
+
+
+def recover_stale_jobs(factory: sessionmaker[Session]) -> None:
+    """Detect jobs stuck in PROCESSING due to previous worker or container crashes."""
+    try:
+        with factory() as db:
+            stale_jobs = find_stale_processing_jobs(db, stale_threshold_seconds=180)
+            for job in stale_jobs:
+                video_exists = False
+                if job.video_path:
+                    p = Path(job.video_path)
+                    video_exists = p.exists() if p.is_absolute() else (Path(settings.MEDIA_ROOT) / p).exists() or p.exists()
+
+                if not video_exists or job.attempts >= 3:
+                    job.status = JobStatus.FAILED
+                    job.completed_at = datetime.now(timezone.utc)
+                    job.error_message = (
+                        "Processing was interrupted by a server restart or timeout. Please re-upload your workout video."
+                    )
+                    logger.warning("Marked crashed/unrecoverable job %s as FAILED", job.id)
+                else:
+                    job.status = JobStatus.QUEUED
+                    logger.info("Reset crashed job %s back to QUEUED for retry", job.id)
+            db.commit()
+    except Exception as exc:
+        logger.warning("Stale job recovery encountered error: %s", exc)
 
 
 def run_worker(
@@ -78,10 +105,11 @@ def run_worker(
         settings.PROCESSING_FPS,
     )
 
-    # Initial automated cleanup of orphaned media folders
+    # Initial automated cleanup of orphaned media folders and stale jobs
     try:
         with factory() as db:
             cleanup_orphaned_media(db)
+        recover_stale_jobs(factory)
     except Exception as cleanup_err:
         logger.warning("Initial storage cleanup encountered error: %s", cleanup_err)
 
@@ -91,6 +119,10 @@ def run_worker(
             logger.info("Worker reached max iterations (%d). Stopping loop.", max_iterations)
             break
         iteration_count += 1
+
+        # Periodic check for stale crashed jobs every 30 iterations (~1 min)
+        if iteration_count % 30 == 0:
+            recover_stale_jobs(factory)
 
         # Periodic storage maintenance every 300 iterations (~10 mins)
         if iteration_count % 300 == 0:

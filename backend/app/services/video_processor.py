@@ -402,6 +402,7 @@ def process_video_file(
             raise VideoProcessingError("No person detected in the video.")
 
         # Validate generated processed video if requested
+        # Validate generated processed video if requested
         relative_video_path: Optional[str] = None
         if output_video_path is not None:
             if output_writer is not None:
@@ -411,8 +412,15 @@ def process_video_file(
                 cleanup_path(output_video_path)
                 raise VideoProcessingError("Processed video generation failed or produced empty file.")
 
+            # Free MediaPipe / TensorFlow Lite C++ memory before invoking ffmpeg
+            if detector_owner and detector is not None:
+                detector.close()
+                detector = None
+                import gc
+                gc.collect()
+
             # If ffmpeg is available, re-encode to web-compatible H.264 (avc1/yuv420p) with faststart
-            # Modern browsers (Chrome, Edge, Safari) do not play raw mp4v (MPEG-4 Part 2) in HTML5 <video>
+            # Use -threads 1 and -preset ultrafast to minimize memory footprint on low-RAM containers
             temp_h264_path = output_video_path.with_name(f"{output_video_path.stem}_h264.mp4")
             try:
                 ffmpeg_bin = shutil.which("ffmpeg")
@@ -420,6 +428,8 @@ def process_video_file(
                     cmd = [
                         ffmpeg_bin,
                         "-y",
+                        "-threads",
+                        "1",
                         "-i",
                         str(output_video_path),
                         "-c:v",
@@ -427,7 +437,7 @@ def process_video_file(
                         "-pix_fmt",
                         "yuv420p",
                         "-preset",
-                        "fast",
+                        "ultrafast",
                         "-movflags",
                         "+faststart",
                         str(temp_h264_path),
@@ -436,7 +446,7 @@ def process_video_file(
                         cmd,
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
-                        timeout=60,
+                        timeout=180,
                     )
                     if (
                         res.returncode == 0
