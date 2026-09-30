@@ -52,7 +52,7 @@ services:
     name: workout-form-coach-frontend
     runtime: static
     rootDir: frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     staticPublishPath: dist
     routes:
       # Single-Page Application (SPA) client-side rewrite rule
