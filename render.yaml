@@ -1,0 +1,70 @@
+# ==============================================================================
+# Render Blueprint Specification for Workout Form Coach
+# Architecture:
+#   1. Backend Web Service (Docker): FastAPI API Server + Background Queue Worker
+#   2. Frontend Static Site: React 19 SPA (Vite)
+#   Database: Uses existing Railway PostgreSQL instance (no DB created on Render)
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Backend Service: FastAPI + Video Processing Worker (Unified Docker)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: workout-form-coach-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_NAME
+        value: Workout Form Coach
+      - key: APP_ENV
+        value: production
+      # User provides external Railway PostgreSQL connection string
+      - key: DATABASE_URL
+        sync: false
+      # Automatically generated secure session signing key
+      - key: SESSION_SECRET
+        generateValue: true
+      # Allowed CORS Origin pointing to the frontend static site
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: workout-form-coach-frontend
+          property: host
+      - key: MEDIA_ROOT
+        value: media
+      - key: MAX_VIDEO_SIZE_MB
+        value: "100"
+      - key: MAX_VIDEO_DURATION_SECONDS
+        value: "60"
+      - key: WORKER_POLL_INTERVAL_SECONDS
+        value: "2"
+      - key: PROCESSING_FPS
+        value: "15"
+
+  # ----------------------------------------------------------------------------
+  # 2. Frontend Service: React 19 Single Page Application (Static Site)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: workout-form-coach-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      # Single-Page Application (SPA) client-side rewrite rule
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Automatically links to backend service URL
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: workout-form-coach-backend
+          property: host
+      - key: VITE_USE_MOCK_API
+        value: "false"

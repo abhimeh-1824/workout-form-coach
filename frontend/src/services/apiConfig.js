@@ -14,7 +14,15 @@ function cleanApiRoot(url) {
   let cleaned = url.trim().replace(/\/+$/, '');
   // If the user appended /api/v1, strip it so endpoints with /api/v1 don't double-prefix
   cleaned = cleaned.replace(/\/api\/v1\/?$/, '');
-  return cleaned.replace(/\/+$/, '');
+  cleaned = cleaned.replace(/\/+$/, '');
+  if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+    if (cleaned.startsWith('localhost') || cleaned.startsWith('127.0.0.1')) {
+      cleaned = `http://${cleaned}`;
+    } else {
+      cleaned = `https://${cleaned}`;
+    }
+  }
+  return cleaned;
 }
 
 /**
