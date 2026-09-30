@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #101417;
+  --color-surface-dim: #101417;
+  --color-surface-bright: #363a3d;
+  --color-surface-container-lowest: #0b0f12;
+  --color-surface-container-low: #181c1f;
+  --color-surface-container: #1c2023;
+  --color-surface-container-high: #262a2e;
+  --color-surface-container-highest: #313539;
+  --color-surface-variant: #313539;
+
+  --color-on-surface: #e0e3e7;
+  --color-on-surface-variant: #94a3b8;
+  --color-outline: #8f937a;
+  --color-outline-variant: #2a323d;
+
+  --color-primary: #ffffff;
+  --color-primary-fixed: #c8f322;
+  --color-primary-fixed-dim: #aed500;
+  --color-primary-container: #c8f322;
+  --color-on-primary: #171e00;
+  --color-on-primary-fixed: #171e00;
+  --color-on-primary-container: #171e00;
+
+  --color-secondary: #7bd0ff;
+  --color-secondary-container: #00a6e0;
+  --color-on-secondary-container: #00374d;
+
+  --color-error: #ffb4ab;
+  --color-error-container: #450a0a;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+
+  --font-display-hero: 'Space Grotesk', sans-serif;
+  --font-headline-lg: 'Space Grotesk', sans-serif;
+  --font-headline-md: 'Space Grotesk', sans-serif;
+  --font-metric-stat: 'Space Grotesk', sans-serif;
+  --font-body-lg: 'Plus Jakarta Sans', sans-serif;
+  --font-body-md: 'Plus Jakarta Sans', sans-serif;
+  --font-body-sm: 'Plus Jakarta Sans', sans-serif;
+  --font-telemetry-data: 'JetBrains Mono', monospace;
+  --font-label-caps: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-outline-variant);
+  }
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-body-md);
+  }
+}
+
+/* Custom utility classes matching Stitch tokens */
+.font-display-hero {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.font-headline-lg {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-headline-md {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.font-metric-stat {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-telemetry-data {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-label-caps {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

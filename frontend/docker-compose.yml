@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: workout-form-coach-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_USE_MOCK_API=true
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped

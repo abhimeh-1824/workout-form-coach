@@ -1,0 +1,15 @@
+# Backend
+### AI Mistake #1 — Duplicate Health Route
+```AI-generated code registered the health router twice, creating both /api/v1/health and /health. The assignment only required the versioned /api/v1/health endpoint. I identified the duplicate route during code review and removed the unversioned registration to keep the API structure consistent.```
+
+### AI Mistake #2 — Cross-Session Identity Map Cache Stale Reads in Queue Tests
+```In Step 8 worker unit testing, the test fixture instantiated an initial job record using an in-memory test session with expire_on_commit=False. When the background worker executed in a distinct database session and committed the status transition from 'queued' to 'processing' and 'failed', the test fixture session returned the stale, cached job instance from its identity map instead of re-reading from the database. I diagnosed the issue and resolved it by invoking session.expire_all() before checking persisted state across concurrent sessions.```
+
+### AI Mistake #3 — Circular Model Imports During Pytest Discovery
+```In Step 10, importing Job and JobStatus directly from app.models.job in app/services/video_processor.py triggered a circular dependency during Pytest test collection because app/models/__init__.py imports User, which imports Base from app.db.base, which registers all models. I resolved this circular dependency by standardizing imports of Job and JobStatus through app.db.base, where Base is declared prior to model registration.```
+
+### AI Mistake #4 — Missing None and NaN Guards in Generic Joint Angle Calculation
+```In Step 11, the initial implementation of calculate_angle(point_a, point_b, point_c) proceeded directly to subscript indexing on coordinate tuples without checking if any input point was None or contained NaN values. When an upstream landmark was missing or occluded, this caused a TypeError: 'NoneType' object is not subscriptable rather than safely returning None as required by the biomechanics specification. I caught this during code inspection, added proactive None and NaN validation guards in both calculate_angle and its extract_xy helper, and verified resilient None returns with dedicated unit tests.```
+
+### AI Mistake #5 — Method Name Mismatch on RepCounter (`get_reps` vs `get_completed_reps`)
+```In Step 13 video pipeline integration, video_processor.py invoked rep_counter.get_reps() to retrieve completed repetitions for workout analysis, whereas BaseRepCounter in Step 12 defined the retrieval method as get_completed_reps(). This triggered an AttributeError during test_video_pipeline_rep_counter_integration. I detected the mismatch during pytest execution, resolved it by adding get_reps() as an explicit method alias on BaseRepCounter alongside get_completed_reps(), and confirmed that rep retrieval functions smoothly across both services.```

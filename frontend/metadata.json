@@ -1,0 +1,6 @@
+{
+  "name": "Workout Form Coach",
+  "description": "AI-powered biomechanical vision analysis for squats, push-ups, and lunges with real-time pose tracking, rep counts, and form corrections.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
