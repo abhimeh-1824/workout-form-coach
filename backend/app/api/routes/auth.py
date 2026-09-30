@@ -26,6 +26,22 @@ logger = logging.getLogger("workout_form_coach.auth")
 router = APIRouter(tags=["authentication"])
 
 
+def _get_cookie_security_params() -> dict:
+    """Determine cross-site cookie attributes based on environment and protocol.
+
+    In production or when using HTTPS / cross-domain static sites (e.g. Render),
+    cookies MUST use SameSite=None and Secure=True so browsers include them in
+    cross-site fetch API requests (credentials: 'include').
+    """
+    is_secure = settings.APP_ENV == "production" or settings.FRONTEND_URL.startswith("https://")
+    return {
+        "httponly": True,
+        "secure": is_secure,
+        "samesite": "none" if is_secure else "lax",
+        "path": "/",
+    }
+
+
 @router.get("/google/login", summary="Initiate Google OAuth Login with PKCE")
 def google_login() -> RedirectResponse:
     """Generate Google authorization URL with PKCE and redirect the browser."""
@@ -58,14 +74,12 @@ def google_login() -> RedirectResponse:
         url=google_auth_url,
         status_code=status.HTTP_302_FOUND,
     )
+    cookie_opts = _get_cookie_security_params()
     response.set_cookie(
         key="oauth_state",
         value=state_cookie_val,
-        httponly=True,
-        secure=settings.APP_ENV == "production",
-        samesite="lax",
         max_age=600,  # 10 minutes
-        path="/",
+        **cookie_opts,
     )
     return response
 
@@ -233,21 +247,20 @@ async def google_callback(
         url=settings.FRONTEND_URL,
         status_code=status.HTTP_302_FOUND,
     )
+    cookie_opts = _get_cookie_security_params()
     response.set_cookie(
         key=settings.SESSION_COOKIE_NAME,
         value=session_token,
-        httponly=True,
-        secure=settings.APP_ENV == "production",
-        samesite="lax",
         max_age=settings.SESSION_MAX_AGE_SECONDS,
-        path="/",
+        **cookie_opts,
     )
     # Clear one-time OAuth state cookie
     response.delete_cookie(
         key="oauth_state",
-        path="/",
-        httponly=True,
-        samesite="lax",
+        path=cookie_opts["path"],
+        httponly=cookie_opts["httponly"],
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
     )
     return response
 
@@ -262,10 +275,12 @@ def get_me(current_user: User = Depends(get_current_user)) -> User:
 def logout() -> JSONResponse:
     """Invalidate authenticated session by clearing the HttpOnly session cookie."""
     response = JSONResponse(content={"message": "Successfully logged out"})
+    cookie_opts = _get_cookie_security_params()
     response.delete_cookie(
         key=settings.SESSION_COOKIE_NAME,
-        path="/",
-        httponly=True,
-        samesite="lax",
+        path=cookie_opts["path"],
+        httponly=cookie_opts["httponly"],
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
     )
     return response

@@ -32,9 +32,13 @@ app = FastAPI(
 )
 
 # CORS middleware configuration
+cors_origins = {settings.FRONTEND_URL, settings.FRONTEND_URL.rstrip("/")}
+if settings.FRONTEND_URL.startswith("https://"):
+    cors_origins.add(settings.FRONTEND_URL.replace("https://", "http://", 1))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
+    allow_origins=list(cors_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

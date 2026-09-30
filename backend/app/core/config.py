@@ -12,6 +12,16 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     DATABASE_URL: str
 
+    @field_validator("FRONTEND_URL", mode="before")
+    @classmethod
+    def assemble_frontend_url(cls, v: str) -> str:
+        """Ensure frontend URL includes protocol scheme if provided as bare hostname."""
+        if isinstance(v, str):
+            v = v.strip().rstrip("/")
+            if v and not v.startswith("http://") and not v.startswith("https://"):
+                return f"https://{v}"
+        return v
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: str) -> str:
