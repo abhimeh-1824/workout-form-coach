@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     YOUTUBE_DOWNLOAD_TIMEOUT_SECONDS: int = 120
 
     # Background Job Worker
+    ENABLE_EMBEDDED_WORKER: bool = True
     WORKER_POLL_INTERVAL_SECONDS: float = 2.0
     PROCESSING_FPS: int = 15
 
